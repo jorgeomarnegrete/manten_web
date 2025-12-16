@@ -48,4 +48,91 @@ export const createCheckoutSession = async (planId) => {
     return response.data;
 };
 
+
+export const getMe = async () => {
+    const response = await api.get('/users/me');
+    return response.data;
+};
+
+// --- ARCHIVES ---
+export const getSectors = async () => {
+    const response = await api.get('/archives/sectors');
+    return response.data;
+};
+
+export const createSector = async (data) => {
+    const response = await api.post('/archives/sectors', data);
+    return response.data;
+};
+
+export const updateSector = async (id, data) => {
+    const response = await api.put(`/archives/sectors/${id}`, data);
+    return response.data;
+};
+
+export const deleteSector = async (id) => {
+    const response = await api.delete(`/archives/sectors/${id}`);
+    return response.data;
+};
+
+export const getAssets = async () => {
+    const response = await api.get('/archives/assets');
+    return response.data;
+};
+
+export const createAsset = async (data) => {
+    const response = await api.post('/archives/assets', data);
+    return response.data;
+};
+
+export const updateAsset = async (id, data) => {
+    const response = await api.put(`/archives/assets/${id}`, data);
+    return response.data;
+};
+
+export const deleteAsset = async (id) => {
+    const response = await api.delete(`/archives/assets/${id}`);
+    return response.data;
+};
+
+export const getWorkers = async () => {
+    const response = await api.get('/archives/workers');
+    return response.data;
+};
+
+export const createWorker = async (data) => {
+    const response = await api.post('/archives/workers', data);
+    return response.data;
+};
+
+export const updateWorker = async (id, data) => {
+    const response = await api.put(`/archives/workers/${id}`, data);
+    return response.data;
+};
+
+export const deleteWorker = async (id) => {
+    const response = await api.delete(`/archives/workers/${id}`);
+    return response.data;
+};
+
+export const getTools = async () => {
+    const response = await api.get('/archives/tools');
+    return response.data;
+};
+
+export const createTool = async (data) => {
+    const response = await api.post('/archives/tools', data);
+    return response.data;
+};
+
+export const updateTool = async (id, data) => {
+    const response = await api.put(`/archives/tools/${id}`, data);
+    return response.data;
+};
+
+export const deleteTool = async (id) => {
+    const response = await api.delete(`/archives/tools/${id}`);
+    return response.data;
+};
+
 export default api;

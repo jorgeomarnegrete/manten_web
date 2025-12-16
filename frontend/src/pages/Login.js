@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-
-import { login } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login({ navigate }) {
+    const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
@@ -11,12 +11,10 @@ export default function Login({ navigate }) {
         e.preventDefault();
         setError(null);
         try {
-            const data = await login(email, password);
-            localStorage.setItem('token', data.access_token);
-            alert('¡Inicio de sesión exitoso!');
-            // En una app real redirigiríamos al dashboard aquí
+            await login(email, password);
+            navigate('/dashboard');
         } catch (err) {
-            setError(err.message);
+            setError(err.message || 'Error al iniciar sesión');
         }
     };
 

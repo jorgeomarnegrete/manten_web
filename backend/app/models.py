@@ -23,6 +23,12 @@ class Company(Base):
     payments = relationship("Payment", back_populates="company")
     subscription = relationship("Subscription", back_populates="company", uselist=False)
 
+    # Archives Module
+    sectors = relationship("Sector", back_populates="company")
+    workers = relationship("Worker", back_populates="company")
+    assets = relationship("Asset", back_populates="company")
+    tools = relationship("Tool", back_populates="company")
+
 class User(Base):
     __tablename__ = "users"
 
@@ -71,3 +77,73 @@ class Subscription(Base):
     company = relationship("Company", back_populates="subscription")
     plan = relationship("Plan", back_populates="subscriptions")
 
+
+# --- Archives Module Models ---
+
+class Sector(Base):
+    __tablename__ = "sectors"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"))
+    name = Column(String, index=True)
+    description = Column(String, nullable=True)
+
+    company = relationship("Company", back_populates="sectors")
+    assets = relationship("Asset", back_populates="sector")
+    workers = relationship("Worker", back_populates="sector") # Default sector for worker
+    tools = relationship("Tool", back_populates="sector") # Tools assigned to sector
+
+class Worker(Base):
+    __tablename__ = "workers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"))
+    sector_id = Column(Integer, ForeignKey("sectors.id"), nullable=True) # Primary/Default sector
+    
+    first_name = Column(String, index=True)
+    last_name = Column(String, index=True)
+    rut_dni = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    job_title = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+
+    company = relationship("Company", back_populates="workers")
+    sector = relationship("Sector", back_populates="workers")
+    tools = relationship("Tool", back_populates="worker")
+
+class Asset(Base): # Maquinas
+    __tablename__ = "assets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"))
+    sector_id = Column(Integer, ForeignKey("sectors.id"), nullable=False) # Mandatory as requested
+
+    name = Column(String, index=True)
+    brand = Column(String, nullable=True)
+    model = Column(String, nullable=True)
+    serial_number = Column(String, nullable=True)
+    purchase_date = Column(Date, nullable=True)
+    status = Column(String, default="ACTIVE") # ACTIVE, INACTIVE, MAINTENANCE
+
+    company = relationship("Company", back_populates="assets")
+    sector = relationship("Sector", back_populates="assets")
+
+class Tool(Base):
+    __tablename__ = "tools"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"))
+    
+    name = Column(String, index=True)
+    code = Column(String, nullable=True) # SKU/Internal Code
+    brand = Column(String, nullable=True)
+    status = Column(String, default="AVAILABLE") # AVAILABLE, IN_USE, BROKEN, LOST
+
+    # Assignment Logic: Can be held by Worker OR Sector
+    current_worker_id = Column(Integer, ForeignKey("workers.id"), nullable=True)
+    current_sector_id = Column(Integer, ForeignKey("sectors.id"), nullable=True)
+
+    company = relationship("Company", back_populates="tools")
+    worker = relationship("Worker", back_populates="tools")
+    sector = relationship("Sector", back_populates="tools")

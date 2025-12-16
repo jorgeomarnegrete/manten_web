@@ -140,3 +140,37 @@ async def mp_webhook(request: Request, db: Session = Depends(get_db)):
             pass # Don't error out to MP to create retry loops unnecessarily in dev
 
     return {"status": "success"}
+
+@router.post("/mock-confirm-subscription")
+def mock_confirm_subscription(
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db)
+):
+    """
+    Simulates a successful subscription webhook.
+    Only for dev/testing when real MP credentials are not available.
+    """
+    if not current_user.company:
+        raise HTTPException(status_code=400, detail="User has no company")
+        
+    print(f"DEBUG: Mock confirming subscription for company {current_user.company.id}")
+    
+    # 1. Update Company Status
+    current_user.company.status = models.CompanyStatus.ACTIVE
+    
+    # 2. Create/Update Subscription
+    sub = db.query(models.Subscription).filter(models.Subscription.company_id == current_user.company.id).first()
+    if not sub:
+        # Default to plan 1 or whatever
+        sub = models.Subscription(
+            company_id=current_user.company.id,
+            plan_id=1, # Defaulting to Basic
+            mp_preapproval_id="mock_preapproval_id",
+            status="authorized"
+        )
+        db.add(sub)
+    else:
+        sub.status = "authorized"
+        
+    db.commit()
+    return {"status": "success", "message": "Subscription activated (MOCK)"}

@@ -1,10 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { getPlans, createCheckoutSession } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Pricing({ navigate }) {
+    const { user, isAuthenticated } = useAuth();
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Redirect if already active
+    useEffect(() => {
+        if (isAuthenticated && user?.company?.status === 'ACTIVE') {
+            // Optional: display message instead of redirect? 
+            // Redirecting is cleaner for "pricing" if you don't need to upgrade.
+            // But maybe they want to see plan details? 
+            // Let's keep it simple: Show alert/banner or button change.
+        }
+    }, [isAuthenticated, user]);
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -27,10 +39,15 @@ export default function Pricing({ navigate }) {
     }, []);
 
     const handleSubscribe = async (planId) => {
-        const token = localStorage.getItem('token');
-        if (!token) {
+        if (!isAuthenticated) {
             alert("Debes iniciar sesión para suscribirte.");
             navigate('/login');
+            return;
+        }
+
+        if (user?.company?.status === 'ACTIVE') {
+            alert("Ya tienes una suscripción activa.");
+            navigate('/dashboard');
             return;
         }
         try {

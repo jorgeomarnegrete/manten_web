@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import api from '../api';
 // import { useSearchParams } from 'react-router-dom';
 
 export default function Billing({ navigate }) {
@@ -17,6 +18,14 @@ export default function Billing({ navigate }) {
 
         if (collectionStatus === 'approved' || paymentStatus === 'approved' || preapprovalId) {
             setStatus('success');
+
+            // Check for Mock Mode to persist changes
+            if (query.get('mock') === 'true') {
+                api.post('/payments/mock-confirm-subscription')
+                    .then(() => console.log("Mock Subscription Activated"))
+                    .catch(e => console.error("Failed to activate mock sub", e));
+            }
+
         } else if (collectionStatus === 'rejected' || paymentStatus === 'rejected') {
             setStatus('canceled'); // or failed
         } else if (collectionStatus === 'pending' || paymentStatus === 'pending') {
@@ -38,7 +47,7 @@ export default function Billing({ navigate }) {
                             <div className="text-green-600">
                                 <h3 className="text-xl font-semibold">¡Suscripción Exitosa!</h3>
                                 <p className="mt-2 text-gray-600">Tu suscripción ha sido procesada correctamente por Mercado Pago.</p>
-                                <button onClick={() => navigate('/')} className="mt-6 text-blue-600 hover:text-blue-500 font-medium">Ir al Dashboard</button>
+                                <button onClick={() => navigate('/dashboard')} className="mt-6 text-blue-600 hover:text-blue-500 font-medium">Ir al Dashboard</button>
                             </div>
                         )}
                         {status === 'pending' && (
