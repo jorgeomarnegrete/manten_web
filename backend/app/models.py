@@ -21,6 +21,7 @@ class Company(Base):
     
     users = relationship("User", back_populates="company")
     payments = relationship("Payment", back_populates="company")
+    subscription = relationship("Subscription", back_populates="company", uselist=False)
 
 class User(Base):
     __tablename__ = "users"
@@ -44,3 +45,29 @@ class Payment(Base):
     transaction_id = Column(String, unique=True)
     
     company = relationship("Company", back_populates="payments")
+
+class Plan(Base):
+    __tablename__ = "plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True) # e.g., "Basic", "Pro"
+    mp_preapproval_plan_id = Column(String, unique=True) # Mercado Pago Preapproval Plan ID
+    price = Column(Numeric(10, 2))
+    currency = Column(String, default="ARS") # Changed to ARS for MP/Region context
+    interval = Column(String, default="month") # "month", "year"
+
+    subscriptions = relationship("Subscription", back_populates="plan")
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), unique=True) # One active sub per company
+    plan_id = Column(Integer, ForeignKey("plans.id"))
+    mp_preapproval_id = Column(String, unique=True, index=True) # Mercado Pago Subscription ID
+    status = Column(String) # "authorized", "paused", "cancelled"
+    current_period_end = Column(DateTime)
+
+    company = relationship("Company", back_populates="subscription")
+    plan = relationship("Plan", back_populates="subscriptions")
+

@@ -25,17 +25,22 @@ services:
       - db
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/mant_db
+      - MERCADOPAGO_ACCESS_TOKEN=APP_USR-7325678715685755-121512-6406bc5bc892cf058e324f652e8906d5-3067813965
+      - MERCADOPAGO_PUBLIC_KEY=APP_USR-08ac5cdf-e7ac-4bd1-a97d-b26e5086f11c
 
   frontend:
     build:
       context: ./frontend
     # volumes:
+
     #   - ./frontend:/app
     #   - /app/node_modules
     ports:
       - "3000:3000"
     environment:
       - CHOKIDAR_USEPOLLING=true
+    stdin_open: true
+    tty: true
     depends_on:
       - backend
 

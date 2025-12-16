@@ -44,3 +44,30 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
     company_id: Optional[int] = None
+
+# Plan & Subscription Schemas
+class PlanBase(BaseModel):
+    name: str
+    price: float
+    currency: str
+    interval: str
+
+class Plan(PlanBase):
+    id: int
+    mp_preapproval_plan_id: str
+    
+    class Config:
+        orm_mode = True
+
+class SubscriptionBase(BaseModel):
+    status: str
+    current_period_end: Optional[datetime] = None
+
+class Subscription(SubscriptionBase):
+    id: int
+    company_id: int
+    plan_id: int
+    plan: Plan
+    
+    class Config:
+        orm_mode = True

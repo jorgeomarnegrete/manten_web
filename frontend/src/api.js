@@ -1,39 +1,51 @@
+import axios from 'axios';
+
 const API_URL = 'http://localhost:8000';
 
-export async function login(email, password) {
-    const formData = new URLSearchParams();
-    formData.append('username', email);
-    formData.append('password', password);
+const api = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
 
-    const response = await fetch(`${API_URL}/token`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData,
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Fallo en el inicio de sesión');
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
     }
+);
 
-    return response.json();
-}
-
-export async function register(companyData) {
-    const response = await fetch(`${API_URL}/register`, {
-        method: 'POST',
+export const login = async (email, password) => {
+    const response = await api.post('/token', { username: email, password }, {
         headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(companyData),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
     });
+    return response.data;
+};
 
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Fallo en el registro');
-    }
+export const register = async (companyData) => {
+    const response = await api.post('/register', companyData);
+    return response.data;
+};
 
-    return response.json();
-}
+export const getPlans = async () => {
+    const response = await api.get('/payments/plans');
+    return response.data;
+};
+
+export const createCheckoutSession = async (planId) => {
+    const response = await api.post('/payments/create-checkout-session', null, {
+        params: { plan_id: planId }
+    });
+    return response.data;
+};
+
+export default api;

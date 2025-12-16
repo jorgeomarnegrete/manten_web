@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Pricing from './pages/Pricing';
+import Billing from './pages/Billing';
 
 function App() {
     const [currentPath, setCurrentPath] = useState(window.location.pathname);
@@ -18,15 +20,26 @@ function App() {
         setCurrentPath(path);
     };
 
+    // Normalize path to ignore trailing slash
+    const normalizedPath = currentPath.endsWith('/') && currentPath.length > 1 ? currentPath.slice(0, -1) : currentPath;
+
     let Component;
-    switch (currentPath) {
+    switch (normalizedPath) {
         case '/register':
             Component = Register;
             break;
         case '/login':
             Component = Login;
             break;
+        case '/pricing':
+            Component = Pricing;
+            break;
+        case '/billing':
+            Component = Billing;
+            break;
         default:
+            // Fallback to Login, but let's check if we are in a known sub-route or debug
+            // console.log("Unknown path:", currentPath); 
             Component = Login;
             break;
     }
@@ -38,6 +51,7 @@ function App() {
                 <div className="space-x-4">
                     <button onClick={() => navigate('/login')} className="text-gray-600 hover:text-blue-600">Ingresar</button>
                     <button onClick={() => navigate('/register')} className="text-gray-600 hover:text-blue-600">Registro</button>
+                    <button onClick={() => navigate('/pricing')} className="text-gray-600 hover:text-blue-600">Precios</button>
                 </div>
             </nav>
             <Component navigate={navigate} />
