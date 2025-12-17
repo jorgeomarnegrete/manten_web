@@ -9,7 +9,7 @@ from jose import JWTError, jwt
 from .database import engine, Base, get_db
 from . import models, schemas, crud, utils
 from .dependencies import get_current_user, get_current_active_user
-from .routers import payments, archives
+from .routers import payments, archives, preventive_plans, work_orders
 
 # Create tables automatically (dev only)
 Base.metadata.create_all(bind=engine)
@@ -18,6 +18,8 @@ app = FastAPI()
 
 app.include_router(payments.router)
 app.include_router(archives.router)
+app.include_router(preventive_plans.router)
+app.include_router(work_orders.router)
 
 app.add_middleware(
     CORSMiddleware,

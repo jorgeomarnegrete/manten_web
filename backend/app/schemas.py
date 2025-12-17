@@ -71,3 +71,74 @@ class Subscription(SubscriptionBase):
     
     class Config:
         orm_mode = True
+
+# --- Preventive Maintenance Schemas ---
+
+class PreventiveTaskBase(BaseModel):
+    description: str
+    estimated_time: Optional[int] = None
+
+class PreventiveTaskCreate(PreventiveTaskBase):
+    pass
+
+class PreventiveTask(PreventiveTaskBase):
+    id: int
+    plan_id: int
+
+    class Config:
+        orm_mode = True
+
+class PreventivePlanBase(BaseModel):
+    name: str
+    frequency_type: str # using str to avoid enum complexity in pydantic validation simple cases
+    frequency_value: int = 1
+    is_active: bool = True
+    asset_id: int
+
+class PreventivePlanCreate(PreventivePlanBase):
+    tasks: List[PreventiveTaskCreate] = []
+
+class PreventivePlan(PreventivePlanBase):
+    id: int
+    company_id: int
+    last_run: Optional[date] = None
+    next_run: Optional[date] = None
+    tasks: List[PreventiveTask] = []
+
+    class Config:
+        orm_mode = True
+
+# --- Work Order Schemas ---
+
+class WorkOrderBase(BaseModel):
+    title: Optional[str] = None # Maybe ticket_number is generated
+    description: str
+    observations: Optional[str] = None
+    priority: str = "MEDIA"
+    status: str = "PENDIENTE"
+    type: str = "CORRECTIVO"
+    asset_id: Optional[int] = None
+    sector_id: Optional[int] = None
+    assigned_to_id: Optional[int] = None
+
+class WorkOrderCreate(WorkOrderBase):
+    pass
+
+class WorkOrder(WorkOrderBase):
+    id: int
+    ticket_number: str
+    company_id: int
+    requested_by_id: Optional[int] = None
+    created_at: datetime
+    assigned_at: Optional[datetime] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    plan_id: Optional[int] = None
+    asset: Optional["Asset"] = None # Avoid circular import issues if any, or strict order
+
+    class Config:
+        orm_mode = True
+
+from .schemas_archives import Asset
+WorkOrder.update_forward_refs()
+

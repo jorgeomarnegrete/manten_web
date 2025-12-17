@@ -147,3 +147,86 @@ class Tool(Base):
     company = relationship("Company", back_populates="tools")
     worker = relationship("Worker", back_populates="tools")
     sector = relationship("Sector", back_populates="tools")
+
+# --- Preventive Maintenance & Work Orders ---
+
+class FrequencyType(str, enum.Enum):
+    DIARIA = "DIARIA"
+    SEMANAL = "SEMANAL"
+    MENSUAL = "MENSUAL"
+    ANUAL = "ANUAL"
+
+class PreventivePlan(Base):
+    __tablename__ = "preventive_plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"))
+    asset_id = Column(Integer, ForeignKey("assets.id"))
+    
+    name = Column(String, index=True)
+    frequency_type = Column(Enum(FrequencyType))
+    frequency_value = Column(Integer, default=1) # e.g. 1 (Day), 2 (Weeks)
+    
+    last_run = Column(Date, nullable=True)
+    next_run = Column(Date, nullable=True)
+    is_active = Column(Boolean, default=True)
+
+    company = relationship("Company")
+    asset = relationship("Asset")
+    tasks = relationship("PreventiveTask", back_populates="plan", cascade="all, delete-orphan")
+
+class PreventiveTask(Base):
+    __tablename__ = "preventive_tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    plan_id = Column(Integer, ForeignKey("preventive_plans.id"))
+    
+    description = Column(String)
+    estimated_time = Column(Integer, nullable=True) # In minutes maybe?
+
+    plan = relationship("PreventivePlan", back_populates="tasks")
+
+class WorkOrderType(str, enum.Enum):
+    PREVENTIVO = "PREVENTIVO"
+    CORRECTIVO = "CORRECTIVO"
+
+class WorkOrderStatus(str, enum.Enum):
+    PENDIENTE = "PENDIENTE"
+    ASIGNADA = "ASIGNADA"
+    EN_PROGRESO = "EN_PROGRESO"
+    PAUSADA = "PAUSADA"
+    COMPLETADA = "COMPLETADA"
+    CANCELADA = "CANCELADA"
+
+class WorkOrder(Base):
+    __tablename__ = "work_orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"))
+    asset_id = Column(Integer, ForeignKey("assets.id"), nullable=True) # Nullable for general maintenance?
+    sector_id = Column(Integer, ForeignKey("sectors.id"), nullable=True)
+    plan_id = Column(Integer, ForeignKey("preventive_plans.id"), nullable=True) # Link to origin plan if preventive
+
+    ticket_number = Column(String, unique=True, index=True) # Generated ID
+    type = Column(Enum(WorkOrderType))
+    status = Column(Enum(WorkOrderStatus), default=WorkOrderStatus.PENDIENTE)
+    priority = Column(String, default="MEDIA") # BAJA, MEDIA, ALTA, CRITICA
+
+    description = Column(String)
+    observations = Column(String, nullable=True)
+
+    requested_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    assigned_to_id = Column(Integer, ForeignKey("workers.id"), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    assigned_at = Column(DateTime(timezone=True), nullable=True)
+    start_date = Column(DateTime(timezone=True), nullable=True)
+    end_date = Column(DateTime(timezone=True), nullable=True)
+
+    company = relationship("Company")
+    asset = relationship("Asset")
+    sector = relationship("Sector")
+    plan = relationship("PreventivePlan")
+    requested_by = relationship("User")
+    assigned_to = relationship("Worker")
+

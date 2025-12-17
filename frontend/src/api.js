@@ -135,4 +135,47 @@ export const deleteTool = async (id) => {
     return response.data;
 };
 
+// --- PREVENTIVE MAINTENANCE ---
+export const getPreventivePlans = async () => {
+    const response = await api.get('/preventive-plans');
+    return response.data;
+};
+
+export const createPreventivePlan = async (data) => {
+    const response = await api.post('/preventive-plans', data);
+    return response.data;
+};
+
+export const deletePreventivePlan = async (id) => {
+    const response = await api.delete(`/preventive-plans/${id}`);
+    return response.data;
+};
+
+export const checkAndRunPreventivePlans = async () => {
+    const response = await api.post('/preventive-plans/check-and-run');
+    return response.data;
+};
+
+// --- WORK ORDERS ---
+export const getWorkOrders = async (params = {}) => {
+    // params can be { status, asset_id }
+    const response = await api.get('/work-orders', { params });
+    return response.data;
+};
+
+export const getWorkOrder = async (id) => {
+    const response = await api.get(`/work-orders/${id}`);
+    return response.data;
+};
+
+export const createWorkOrder = async (data) => {
+    const response = await api.post('/work-orders', data);
+    return response.data;
+};
+
+export const updateWorkOrder = async (id, data) => {
+    const response = await api.put(`/work-orders/${id}`, data);
+    return response.data;
+};
+
 export default api;
