@@ -122,7 +122,7 @@ class WorkOrderBase(BaseModel):
     assigned_to_id: Optional[int] = None
 
 class WorkOrderCreate(WorkOrderBase):
-    pass
+    requested_by_id: int
 
 class WorkOrder(WorkOrderBase):
     id: int

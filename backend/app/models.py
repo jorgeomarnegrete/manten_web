@@ -215,7 +215,7 @@ class WorkOrder(Base):
     description = Column(String)
     observations = Column(String, nullable=True)
 
-    requested_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    requested_by_id = Column(Integer, ForeignKey("workers.id"), nullable=True)
     assigned_to_id = Column(Integer, ForeignKey("workers.id"), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -227,6 +227,6 @@ class WorkOrder(Base):
     asset = relationship("Asset")
     sector = relationship("Sector")
     plan = relationship("PreventivePlan")
-    requested_by = relationship("User")
-    assigned_to = relationship("Worker")
+    requested_by = relationship("Worker", foreign_keys=[requested_by_id])
+    assigned_to = relationship("Worker", foreign_keys=[assigned_to_id])
 

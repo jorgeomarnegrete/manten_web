@@ -1,23 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { getWorkOrders, updateWorkOrder } from '../../api';
+import { getWorkOrders, updateWorkOrder, getAssets, getWorkers, createWorkOrder } from '../../api';
 
 export default function WorkOrderList({ navigate }) {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('');
 
+    // Modal State
+    const [showModal, setShowModal] = useState(false);
+    const [workers, setWorkers] = useState([]);
+    const [assets, setAssets] = useState([]);
+
+    const initialForm = {
+        title: '',
+        description: '',
+        asset_id: '',
+        priority: 'MEDIA',
+        requested_by_id: '',
+        assigned_to_id: '',
+        type: 'CORRECTIVO'
+    };
+    const [formData, setFormData] = useState(initialForm);
+
     useEffect(() => {
-        loadOrders();
+        loadData();
     }, [filterStatus]);
 
-    const loadOrders = async () => {
+    const loadData = async () => {
         setLoading(true);
         try {
             const params = filterStatus ? { status: filterStatus } : {};
-            const data = await getWorkOrders(params);
-            setOrders(data);
+            // Parallel load for efficiency
+            const [ordersData, assetsData, workersData] = await Promise.all([
+                getWorkOrders(params),
+                getAssets(),
+                getWorkers()
+            ]);
+
+            setOrders(ordersData);
+            setAssets(assetsData);
+            setWorkers(workersData);
         } catch (error) {
-            console.error("Error loading work orders", error);
+            console.error("Error loading data", error);
         } finally {
             setLoading(false);
         }
@@ -26,9 +50,42 @@ export default function WorkOrderList({ navigate }) {
     const handleStatusChange = async (id, newStatus) => {
         try {
             await updateWorkOrder(id, { status: newStatus });
-            loadOrders(); // Refresh to reflect changes/dates
+            // Reload just orders to be quicker
+            const params = filterStatus ? { status: filterStatus } : {};
+            const data = await getWorkOrders(params);
+            setOrders(data);
         } catch (error) {
             console.error("Error updating status", error);
+            alert("Error al actualizar estado");
+        }
+    };
+
+    const handleCreateSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.requested_by_id) {
+            alert("El campo 'Solicitante' es obligatorio.");
+            return;
+        }
+
+        try {
+            const payload = { ...formData };
+            // Ensure IDs are integers or null/undefined
+            payload.requested_by_id = parseInt(payload.requested_by_id);
+            if (payload.asset_id) payload.asset_id = parseInt(payload.asset_id);
+            else delete payload.asset_id;
+
+            if (payload.assigned_to_id) payload.assigned_to_id = parseInt(payload.assigned_to_id);
+            else delete payload.assigned_to_id;
+
+            await createWorkOrder(payload);
+            setShowModal(false);
+            setFormData(initialForm);
+
+            // Reload orders
+            loadData();
+        } catch (error) {
+            console.error("Error creating work order", error);
+            alert("Error al crear OT: " + (error.response?.data?.detail || error.message));
         }
     };
 
@@ -71,7 +128,13 @@ export default function WorkOrderList({ navigate }) {
                         <option value="EN_PROGRESO">En Progreso</option>
                         <option value="COMPLETADA">Completada</option>
                     </select>
-                    {/* Add Create Manual OT button later */}
+
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium"
+                    >
+                        + Nueva OT Correctiva
+                    </button>
                 </div>
             </div>
 
@@ -120,6 +183,108 @@ export default function WorkOrderList({ navigate }) {
                             )}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Modal de Creación */}
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+                        <h2 className="text-xl font-bold mb-4">Nueva Orden Correctiva</h2>
+                        <form onSubmit={handleCreateSubmit} className="space-y-4">
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Título Breve</label>
+                                <input
+                                    type="text"
+                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                    value={formData.title}
+                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                    placeholder="Ej. Fuga de aceite"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Descripción Detallada *</label>
+                                <textarea
+                                    required
+                                    rows="3"
+                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                ></textarea>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Activo (Máquina)</label>
+                                    <select
+                                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                        value={formData.asset_id}
+                                        onChange={(e) => setFormData({ ...formData, asset_id: e.target.value })}
+                                    >
+                                        <option value="">- Seleccionar Activo -</option>
+                                        {assets.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Prioridad</label>
+                                    <select
+                                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                        value={formData.priority}
+                                        onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                                    >
+                                        <option value="BAJA">Baja</option>
+                                        <option value="MEDIA">Media</option>
+                                        <option value="ALTA">Alta</option>
+                                        <option value="CRITICA">Crítica</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Solicitante (Encargado) *</label>
+                                    <select
+                                        required
+                                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                        value={formData.requested_by_id}
+                                        onChange={(e) => setFormData({ ...formData, requested_by_id: e.target.value })}
+                                    >
+                                        <option value="">- Seleccionar Personal -</option>
+                                        {workers.map(w => <option key={w.id} value={w.id}>{w.first_name} {w.last_name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Asignado a (Técnico)</label>
+                                    <select
+                                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                        value={formData.assigned_to_id}
+                                        onChange={(e) => setFormData({ ...formData, assigned_to_id: e.target.value })}
+                                    >
+                                        <option value="">- Sin Asignar -</option>
+                                        {workers.map(w => <option key={w.id} value={w.id}>{w.first_name} {w.last_name}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowModal(false)}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                                >
+                                    Crear Orden
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>
