@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getWorkOrders, updateWorkOrder, getAssets, getWorkers, createWorkOrder } from '../../api';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function WorkOrderList({ navigate }) {
     const [orders, setOrders] = useState([]);
@@ -21,7 +23,8 @@ export default function WorkOrderList({ navigate }) {
         priority: 'MEDIA',
         requested_by_id: '',
         assigned_to_id: '',
-        type: 'CORRECTIVO'
+        type: 'CORRECTIVO',
+        status: 'PENDIENTE'
     };
     const [formData, setFormData] = useState(initialForm);
 
@@ -108,9 +111,85 @@ export default function WorkOrderList({ navigate }) {
             priority: wo.priority || 'MEDIA',
             requested_by_id: wo.requested_by_id || '',
             assigned_to_id: wo.assigned_to_id || '',
-            type: wo.type || 'CORRECTIVO'
+            type: wo.type || 'CORRECTIVO',
+            status: wo.status || 'PENDIENTE'
         });
         setShowModal(true);
+    };
+
+    const generatePDF = (wo) => {
+        const doc = new jsPDF({
+            format: 'a4'
+        });
+
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 14;
+
+        // Header
+        doc.setFontSize(22);
+        doc.text(`ORDEN DE TRABAJO #${wo.ticket_number}`, margin, 22);
+
+        doc.setFontSize(10);
+        doc.text(`Fecha: ${new Date(wo.created_at).toLocaleDateString()}`, margin, 30);
+        doc.text(`Estado: ${wo.status}`, margin, 35);
+        doc.text(`Tipo: ${wo.type}`, margin, 40);
+
+        // Details Table
+        const tableData = [
+            ['Activo', wo.asset ? wo.asset.name : 'N/A'],
+            ['Prioridad', wo.priority],
+            ['Solicitado por', workers.find(w => w.id === wo.requested_by_id)?.first_name || 'N/A'],
+            ['Asignado a', workers.find(w => w.id === wo.assigned_to_id)?.first_name || 'Sin Asignar'],
+            ['Descripción', wo.description]
+        ];
+
+        autoTable(doc, {
+            startY: 45,
+            head: [['Campo', 'Detalle']],
+            body: tableData,
+            theme: 'grid',
+            headStyles: { fillColor: [66, 139, 202] },
+            columnStyles: {
+                0: { cellWidth: 50, fontStyle: 'bold' }
+            }
+        });
+
+        // Observations Section (Manual fill) - Takes remaining space
+        const finalY = doc.lastAutoTable.finalY || 100;
+        const footerHeight = 40; // Space for signatures
+        const boxHeight = pageHeight - finalY - footerHeight - 20; // 20 margin
+
+        doc.setFontSize(14);
+        doc.text('Observaciones / Informe Técnico', margin, finalY + 15);
+
+        // Ensure we have reasonable space
+        if (boxHeight > 30) {
+            doc.setLineWidth(0.1);
+            doc.rect(margin, finalY + 20, pageWidth - (margin * 2), boxHeight); // Fill width and available height
+
+            doc.setFontSize(10);
+            doc.setTextColor(150);
+            doc.text('(Espacio reservado para completar manualmente tras la ejecución)', margin + 2, finalY + 25);
+            doc.setTextColor(0);
+        }
+
+        // Signatures at the bottom
+        const signatureY = pageHeight - 25;
+
+        doc.line(margin, signatureY, margin + 70, signatureY);
+        doc.text('Firma Técnico', margin, signatureY + 5);
+
+        doc.line(pageWidth - margin - 70, signatureY, pageWidth - margin, signatureY);
+        doc.text('Firma Supervisor/Solicitante', pageWidth - margin - 70, signatureY + 5);
+
+        // Footer
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        doc.text('Generado por Sistema de Mantenimiento', margin, pageHeight - 10);
+
+        // Open in new tab instead of saving
+        window.open(doc.output('bloburl'), '_blank');
     };
 
     const openCreateModal = () => {
@@ -176,6 +255,7 @@ export default function WorkOrderList({ navigate }) {
                         <thead className="bg-gray-50">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activo</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prioridad</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
@@ -195,6 +275,11 @@ export default function WorkOrderList({ navigate }) {
                                     <tr key={wo.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => {/* Maybe navigate to detail */ }}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{wo.ticket_number}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${wo.type === 'PREVENTIVO' ? 'bg-indigo-100 text-indigo-800' : 'bg-orange-100 text-orange-800'}`}>
+                                                {wo.type}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {/* Mostrar nombre del activo si existe */}
                                             {wo.asset ? wo.asset.name : '-'}
                                         </td>
@@ -204,10 +289,12 @@ export default function WorkOrderList({ navigate }) {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(wo.created_at).toLocaleDateString('es-ES')}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={(e) => e.stopPropagation()}>
-                                            <button onClick={() => handleEdit(wo)} className="text-blue-600 hover:text-blue-900 mr-4">Editar</button>
-                                            {wo.status !== 'COMPLETADA' && (
-                                                <button onClick={() => handleStatusChange(wo.id, 'COMPLETADA')} className="text-green-600 hover:text-green-900 mr-2">Completar</button>
+                                            {wo.status === 'ASIGNADA' && (
+                                                <button onClick={() => generatePDF(wo)} className="text-gray-600 hover:text-gray-900 mr-4" title="Imprimir PDF">
+                                                    🖨️
+                                                </button>
                                             )}
+                                            <button onClick={() => handleEdit(wo)} className="text-blue-600 hover:text-blue-900 mr-4">Editar</button>
                                         </td>
                                     </tr>
                                 ))
@@ -308,6 +395,23 @@ export default function WorkOrderList({ navigate }) {
                                         {workers.map(w => <option key={w.id} value={w.id}>{w.first_name} {w.last_name}</option>)}
                                     </select>
                                 </div>
+                            </div>
+
+                            {/* Estado - Visible siempre para edición o creación */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Estado</label>
+                                <select
+                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                    value={formData.status || 'PENDIENTE'}
+                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                >
+                                    <option value="PENDIENTE">PENDIENTE</option>
+                                    <option value="ASIGNADA">ASIGNADA</option>
+                                    <option value="EN_PROGRESO">EN PROGRESO</option>
+                                    <option value="PAUSADA">PAUSADA</option>
+                                    <option value="COMPLETADA">COMPLETADA</option>
+                                    <option value="CANCELADA">CANCELADA</option>
+                                </select>
                             </div>
 
                             <div className="flex justify-end gap-2 mt-6">
