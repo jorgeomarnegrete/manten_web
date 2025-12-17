@@ -11,9 +11,12 @@ export default function WorkOrderList({ navigate }) {
     const [workers, setWorkers] = useState([]);
     const [assets, setAssets] = useState([]);
 
+    const [editingId, setEditingId] = useState(null);
+
     const initialForm = {
         title: '',
         description: '',
+        observations: '',
         asset_id: '',
         priority: 'MEDIA',
         requested_by_id: '',
@@ -77,16 +80,43 @@ export default function WorkOrderList({ navigate }) {
             if (payload.assigned_to_id) payload.assigned_to_id = parseInt(payload.assigned_to_id);
             else delete payload.assigned_to_id;
 
-            await createWorkOrder(payload);
+            if (editingId) {
+                await updateWorkOrder(editingId, payload);
+            } else {
+                await createWorkOrder(payload);
+            }
+
             setShowModal(false);
             setFormData(initialForm);
+            setEditingId(null);
 
             // Reload orders
             loadData();
         } catch (error) {
-            console.error("Error creating work order", error);
-            alert("Error al crear OT: " + (error.response?.data?.detail || error.message));
+            console.error("Error saving work order", error);
+            alert("Error al guardar OT: " + (error.response?.data?.detail || error.message));
         }
+    };
+
+    const handleEdit = (wo) => {
+        setEditingId(wo.id);
+        setFormData({
+            title: wo.title || '', // Assuming title exists in response or need to check schema usage
+            description: wo.description || '',
+            observations: wo.observations || '',
+            asset_id: wo.asset_id || '',
+            priority: wo.priority || 'MEDIA',
+            requested_by_id: wo.requested_by_id || '',
+            assigned_to_id: wo.assigned_to_id || '',
+            type: wo.type || 'CORRECTIVO'
+        });
+        setShowModal(true);
+    };
+
+    const openCreateModal = () => {
+        setEditingId(null);
+        setFormData(initialForm);
+        setShowModal(true);
     };
 
     const getPriorityColor = (priority) => {
@@ -130,7 +160,7 @@ export default function WorkOrderList({ navigate }) {
                     </select>
 
                     <button
-                        onClick={() => setShowModal(true)}
+                        onClick={openCreateModal}
                         className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium"
                     >
                         + Nueva OT Correctiva
@@ -174,6 +204,7 @@ export default function WorkOrderList({ navigate }) {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(wo.created_at).toLocaleDateString('es-ES')}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={(e) => e.stopPropagation()}>
+                                            <button onClick={() => handleEdit(wo)} className="text-blue-600 hover:text-blue-900 mr-4">Editar</button>
                                             {wo.status !== 'COMPLETADA' && (
                                                 <button onClick={() => handleStatusChange(wo.id, 'COMPLETADA')} className="text-green-600 hover:text-green-900 mr-2">Completar</button>
                                             )}
@@ -189,8 +220,8 @@ export default function WorkOrderList({ navigate }) {
             {/* Modal de Creación */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-                        <h2 className="text-xl font-bold mb-4">Nueva Orden Correctiva</h2>
+                    <div className="bg-white rounded-lg p-6 w-full max-w-lg overflow-y-auto max-h-[90vh]">
+                        <h2 className="text-xl font-bold mb-4">{editingId ? 'Editar Orden de Trabajo' : 'Nueva Orden Correctiva'}</h2>
                         <form onSubmit={handleCreateSubmit} className="space-y-4">
 
                             <div>
@@ -212,6 +243,17 @@ export default function WorkOrderList({ navigate }) {
                                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                ></textarea>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Observaciones (Técnico/Operador)</label>
+                                <textarea
+                                    rows="2"
+                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                    value={formData.observations}
+                                    onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+                                    placeholder="Detalles sobre la reparación, repuestos usados, etc."
                                 ></textarea>
                             </div>
 
@@ -280,7 +322,7 @@ export default function WorkOrderList({ navigate }) {
                                     type="submit"
                                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
                                 >
-                                    Crear Orden
+                                    {editingId ? 'Guardar Cambios' : 'Crear Orden'}
                                 </button>
                             </div>
                         </form>

@@ -112,6 +112,16 @@ function AppContent() {
     // Normalize path to ignore trailing slash
     const normalizedPath = currentPath.endsWith('/') && currentPath.length > 1 ? currentPath.slice(0, -1) : currentPath;
 
+    // Route Protection Logic
+    useEffect(() => {
+        const publicRoutes = ['/', '/login', '/register', '/pricing'];
+        if (!loading && !isAuthenticated && !publicRoutes.includes(normalizedPath)) {
+            // If user is not authenticated and tries to access a protected route
+            window.history.pushState({}, '', '/login');
+            setCurrentPath('/login');
+        }
+    }, [isAuthenticated, loading, normalizedPath]);
+
     let Component;
     switch (normalizedPath) {
         case '/register':
