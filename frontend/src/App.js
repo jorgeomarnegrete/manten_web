@@ -105,10 +105,14 @@ function AppContent() {
     );
 }
 
+import { CompanyProvider } from './context/CompanyContext';
+
 function App() {
     return (
         <AuthProvider>
-            <AppContent />
+            <CompanyProvider>
+                <AppContent />
+            </CompanyProvider>
         </AuthProvider>
     );
 }

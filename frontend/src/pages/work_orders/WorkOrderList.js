@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getWorkOrders, updateWorkOrder, getAssets, getWorkers, createWorkOrder, getCompanySettings, API_URL } from '../../api';
+import { getWorkOrders, updateWorkOrder, getAssets, getWorkers, createWorkOrder, API_URL } from '../../api';
+import { useCompany } from '../../context/CompanyContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -7,7 +8,7 @@ export default function WorkOrderList({ navigate }) {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('');
-    const [companyData, setCompanyData] = useState(null);
+    const { companyData, getLogoUrl } = useCompany();
 
     // Modal State
     const [showModal, setShowModal] = useState(false);
@@ -38,17 +39,15 @@ export default function WorkOrderList({ navigate }) {
         try {
             const params = filterStatus ? { status: filterStatus } : {};
             // Parallel load for efficiency
-            const [ordersData, assetsData, workersData, companyRef] = await Promise.all([
+            const [ordersData, assetsData, workersData] = await Promise.all([
                 getWorkOrders(params),
                 getAssets(),
-                getWorkers(),
-                getCompanySettings()
+                getWorkers()
             ]);
 
             setOrders(ordersData);
             setAssets(assetsData);
             setWorkers(workersData);
-            setCompanyData(companyRef);
         } catch (error) {
             console.error("Error loading data", error);
         } finally {
@@ -131,12 +130,9 @@ export default function WorkOrderList({ navigate }) {
         let startY = 20;
 
         // Logo Logic
-        if (companyData?.logo_url) {
+        const logoUrl = getLogoUrl();
+        if (logoUrl) {
             try {
-                const imgUrl = companyData.logo_url.startsWith('http')
-                    ? companyData.logo_url
-                    : `${API_URL}${companyData.logo_url}`;
-
                 // Helper to load image
                 const loadImage = (src) => new Promise((resolve, reject) => {
                     const img = new Image();
@@ -146,7 +142,7 @@ export default function WorkOrderList({ navigate }) {
                     img.src = src;
                 });
 
-                const img = await loadImage(imgUrl);
+                const img = await loadImage(logoUrl);
 
                 // Aspect Ratio
                 const imgWidth = 25;

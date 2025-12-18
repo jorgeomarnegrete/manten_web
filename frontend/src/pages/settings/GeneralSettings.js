@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getCompanySettings, updateCompanySettings, uploadCompanyLogo, API_URL } from '../../api';
+import { getCompanySettings, updateCompanySettings, API_URL } from '../../api';
+import { useCompany } from '../../context/CompanyContext';
 
 const PROVINCES = [
     "Buenos Aires", "Ciudad Autónoma de Buenos Aires", "Catamarca", "Chaco", "Chubut", "Córdoba", "Corrientes", "Entre Ríos", "Formosa", "Jujuy", "La Pampa", "La Rioja", "Mendoza", "Misiones", "Neuquén", "Río Negro", "Salta", "San Juan", "San Luis", "Santa Cruz", "Santa Fe", "Santiago del Estero", "Tierra del Fuego", "Tucumán"
@@ -24,8 +25,12 @@ const GeneralSettings = () => {
         loadSettings();
     }, []);
 
+    const { refreshCompanyData, uploadLogo, getLogoUrl } = useCompany();
+
     const loadSettings = async () => {
         try {
+            // Still fetching setting for form editing to keep it isolated or could use context
+            // Let's rely on API for fresh edit form but context for global
             const data = await getCompanySettings();
             setFormData({
                 name: data.name || '',
@@ -35,6 +40,8 @@ const GeneralSettings = () => {
                 province: data.province || '',
                 phone: data.phone || '',
                 email_contact: data.email_contact || '',
+                // logo_url is handled via context for display now, but might need it here if we want to show it?
+                // Actually let's use context for display
                 logo_url: data.logo_url || ''
             });
         } catch (error) {
@@ -55,7 +62,7 @@ const GeneralSettings = () => {
 
         setUploading(true);
         try {
-            const res = await uploadCompanyLogo(file);
+            const res = await uploadLogo(file);
             setFormData(prev => ({ ...prev, logo_url: res.logo_url }));
             setMessage({ type: 'success', text: 'Logo actualizado correctamente.' });
         } catch (error) {
@@ -72,6 +79,7 @@ const GeneralSettings = () => {
         setMessage({ type: '', text: '' });
         try {
             await updateCompanySettings(formData);
+            refreshCompanyData(); // Update global state
             setMessage({ type: 'success', text: 'Configuración guardada correctamente.' });
         } catch (error) {
             console.error("Error updating settings:", error);
@@ -83,9 +91,8 @@ const GeneralSettings = () => {
 
     if (loading && !formData.name) return <div className="p-8 text-center text-gray-500">Cargando configuración...</div>;
 
-    const logoSrc = formData.logo_url
-        ? (formData.logo_url.startsWith('http') ? formData.logo_url : `${API_URL}${formData.logo_url}`)
-        : null;
+    // Use context helper for display
+    const logoSrc = getLogoUrl();
 
     return (
         <div className="container mx-auto px-4 py-8">

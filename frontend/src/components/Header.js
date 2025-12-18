@@ -1,35 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getCompanySettings, API_URL } from '../api';
+import { useCompany } from '../context/CompanyContext';
 
 const Header = ({ navigate }) => {
     const { isAuthenticated, logout } = useAuth();
+    const { companyData, getLogoUrl } = useCompany();
     const [showArchives, setShowArchives] = useState(false);
     const [showMaintenance, setShowMaintenance] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-    const [companyData, setCompanyData] = useState({ name: 'MantenPro', logo_url: null });
 
-    useEffect(() => {
-        if (isAuthenticated) {
-            loadCompanyData();
-        }
-    }, [isAuthenticated]);
+    // No local useEffect for companyData needed anymore
 
-    const loadCompanyData = async () => {
-        try {
-            const data = await getCompanySettings();
-            setCompanyData({
-                name: data.name || 'MantenPro',
-                logo_url: data.logo_url
-            });
-        } catch (error) {
-            console.error("Error loading header data:", error);
-        }
-    };
-
-    const logoSrc = companyData.logo_url
-        ? (companyData.logo_url.startsWith('http') ? companyData.logo_url : `${API_URL}${companyData.logo_url}`)
-        : null;
+    const logoSrc = getLogoUrl();
 
     return (
         <nav className="p-4 bg-white shadow-sm flex justify-between items-center px-8 relative z-50">
