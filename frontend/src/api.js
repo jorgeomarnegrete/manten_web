@@ -135,6 +135,63 @@ export const deleteTool = async (id) => {
     return response.data;
 };
 
+// --- SPARE PARTS ---
+export const getSparePartCategories = async () => {
+    const response = await api.get('/archives/categories');
+    return response.data;
+};
+
+export const createSparePartCategory = async (data) => {
+    const response = await api.post('/archives/categories', data);
+    return response.data;
+};
+
+export const deleteSparePartCategory = async (id) => {
+    const response = await api.delete(`/archives/categories/${id}`);
+    return response.data;
+};
+
+export const getSpareParts = async () => {
+    const response = await api.get('/archives/spare-parts');
+    return response.data;
+};
+
+export const createSparePart = async (data) => {
+    const response = await api.post('/archives/spare-parts', data);
+    return response.data;
+};
+
+export const updateSparePart = async (id, data) => {
+    const response = await api.put(`/archives/spare-parts/${id}`, data);
+    return response.data;
+};
+
+export const deleteSparePart = async (id) => {
+    const response = await api.delete(`/archives/spare-parts/${id}`);
+    return response.data;
+};
+
+// --- SUPPLIERS ---
+export const getSuppliers = async () => {
+    const response = await api.get('/archives/suppliers');
+    return response.data;
+};
+
+export const createSupplier = async (data) => {
+    const response = await api.post('/archives/suppliers', data);
+    return response.data;
+};
+
+export const updateSupplier = async (id, data) => {
+    const response = await api.put(`/archives/suppliers/${id}`, data);
+    return response.data;
+};
+
+export const deleteSupplier = async (id) => {
+    const response = await api.delete(`/archives/suppliers/${id}`);
+    return response.data;
+};
+
 // --- PREVENTIVE MAINTENANCE ---
 export const getPreventivePlans = async () => {
     const response = await api.get('/preventive-plans');

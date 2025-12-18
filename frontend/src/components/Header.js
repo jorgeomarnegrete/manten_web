@@ -81,6 +81,8 @@ const Header = ({ navigate }) => {
                                         <button onClick={() => { navigate('/archives/assets'); setShowArchives(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Activos</button>
                                         <button onClick={() => { navigate('/archives/workers'); setShowArchives(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Personal</button>
                                         <button onClick={() => { navigate('/archives/tools'); setShowArchives(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Herramientas</button>
+                                        <button onClick={() => { navigate('/archives/spare-parts'); setShowArchives(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Repuestos</button>
+                                        <button onClick={() => { navigate('/archives/suppliers'); setShowArchives(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Proveedores</button>
                                     </div>
                                 </div>
                             )}

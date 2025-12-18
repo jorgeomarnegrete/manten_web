@@ -92,3 +92,58 @@ class Tool(ToolBase):
 
     class Config:
         orm_mode = True
+
+# --- SPARE PARTS ---
+class SparePartCategoryBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class SparePartCategoryCreate(SparePartCategoryBase):
+    pass
+
+class SparePartCategoryOut(SparePartCategoryBase):
+    id: int
+    company_id: int
+
+    class Config:
+        orm_mode = True
+
+class SparePartBase(BaseModel):
+    name: str
+    internal_code: Optional[str] = None
+    cost: float = 0.0
+    currency: str = "ARS"
+    stock: int = 0
+    category_id: Optional[int] = None
+
+class SparePartCreate(SparePartBase):
+    pass
+
+class SparePartOut(SparePartBase):
+    id: int
+    company_id: int
+    category: Optional[SparePartCategoryOut] = None
+
+    class Config:
+        orm_mode = True
+
+# --- SUPPLIERS ---
+class SupplierBase(BaseModel):
+    name: str
+    address: Optional[str] = None
+    city: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+
+class SupplierCreate(SupplierBase):
+    category_ids: List[int] = []
+
+class SupplierOut(SupplierBase):
+    id: int
+    company_id: int
+    categories: List[SparePartCategoryOut] = []
+
+    class Config:
+        orm_mode = True

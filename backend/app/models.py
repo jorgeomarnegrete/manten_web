@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Date, Enum, Numeric
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Date, Enum, Numeric, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -38,6 +38,9 @@ class Company(Base):
     workers = relationship("Worker", back_populates="company")
     assets = relationship("Asset", back_populates="company")
     tools = relationship("Tool", back_populates="company")
+    spare_part_categories = relationship("SparePartCategory", back_populates="company")
+    spare_parts = relationship("SparePart", back_populates="company")
+    suppliers = relationship("Supplier", back_populates="company")
 
 class User(Base):
     __tablename__ = "users"
@@ -157,6 +160,60 @@ class Tool(Base):
     company = relationship("Company", back_populates="tools")
     worker = relationship("Worker", back_populates="tools")
     sector = relationship("Sector", back_populates="tools")
+
+from sqlalchemy import Table
+
+# Association Table for Many-to-Many
+supplier_categories = Table(
+    'supplier_categories', Base.metadata,
+    Column('supplier_id', Integer, ForeignKey('suppliers.id')),
+    Column('category_id', Integer, ForeignKey('spare_part_categories.id'))
+)
+
+class SparePartCategory(Base):
+    __tablename__ = "spare_part_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"))
+    name = Column(String, index=True)
+    description = Column(String, nullable=True)
+
+    company = relationship("Company", back_populates="spare_part_categories")
+    spare_parts = relationship("SparePart", back_populates="category")
+    suppliers = relationship("Supplier", secondary=supplier_categories, back_populates="categories")
+
+class Supplier(Base):
+    __tablename__ = "suppliers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"))
+    
+    name = Column(String, index=True)
+    address = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+    contact_name = Column(String, nullable=True)
+    contact_phone = Column(String, nullable=True)
+
+    company = relationship("Company", back_populates="suppliers")
+    categories = relationship("SparePartCategory", secondary=supplier_categories, back_populates="suppliers")
+
+class SparePart(Base):
+    __tablename__ = "spare_parts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"))
+    category_id = Column(Integer, ForeignKey("spare_part_categories.id"), nullable=True)
+
+    name = Column(String, index=True)
+    internal_code = Column(String, nullable=True) # SKU/Internal Code
+    cost = Column(Numeric(10, 2), default=0)
+    currency = Column(String, default="ARS")
+    stock = Column(Integer, default=0)
+    
+    company = relationship("Company", back_populates="spare_parts")
+    category = relationship("SparePartCategory", back_populates="spare_parts")
 
 # --- Preventive Maintenance & Work Orders ---
 

@@ -8,12 +8,15 @@ import Sectors from './pages/archives/Sectors';
 import Assets from './pages/archives/Assets';
 import Workers from './pages/archives/Workers';
 import Tools from './pages/archives/Tools';
+import SpareParts from './pages/archives/SpareParts';
+import Suppliers from './pages/archives/Suppliers';
 import PreventivePlans from './pages/preventive/PreventivePlans';
 import PlanEditor from './pages/preventive/PlanEditor';
 import WorkOrderList from './pages/work_orders/WorkOrderList';
 import GeneralSettings from './pages/settings/GeneralSettings';
 import Header from './components/Header';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CompanyProvider } from './context/CompanyContext';
 
 function AppContent() {
     const { isAuthenticated, loading } = useAuth();
@@ -74,6 +77,12 @@ function AppContent() {
         case '/archives/tools':
             Component = Tools;
             break;
+        case '/archives/spare-parts':
+            Component = SpareParts;
+            break;
+        case '/archives/suppliers':
+            Component = Suppliers;
+            break;
         case '/preventive/plans':
             Component = PreventivePlans;
             break;
@@ -105,7 +114,7 @@ function AppContent() {
     );
 }
 
-import { CompanyProvider } from './context/CompanyContext';
+
 
 function App() {
     return (

@@ -257,3 +257,176 @@ def delete_tool(
     db.delete(db_tool)
     db.commit()
     return {"status": "success"}
+
+# --- SPARE PARTS CATEGORIES ---
+@router.post("/categories", response_model=schemas_archives.SparePartCategoryOut)
+def create_category(
+    category: schemas_archives.SparePartCategoryCreate,
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db)
+):
+    db_category = models.SparePartCategory(**category.dict(), company_id=current_user.company_id)
+    db.add(db_category)
+    db.commit()
+    db.refresh(db_category)
+    return db_category
+
+@router.get("/categories", response_model=List[schemas_archives.SparePartCategoryOut])
+def read_categories(
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db)
+):
+    return db.query(models.SparePartCategory).filter(models.SparePartCategory.company_id == current_user.company_id).all()
+
+@router.delete("/categories/{category_id}")
+def delete_category(
+    category_id: int,
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db)
+):
+    db_category = db.query(models.SparePartCategory).filter(models.SparePartCategory.id == category_id, models.SparePartCategory.company_id == current_user.company_id).first()
+    if not db_category:
+        raise HTTPException(status_code=404, detail="Category not found")
+        
+    db.delete(db_category)
+    db.commit()
+    return {"status": "success"}
+
+# --- SPARE PARTS ---
+@router.post("/spare-parts", response_model=schemas_archives.SparePartOut)
+def create_spare_part(
+    spare_part: schemas_archives.SparePartCreate,
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db)
+):
+    if spare_part.category_id:
+        category = db.query(models.SparePartCategory).filter(models.SparePartCategory.id == spare_part.category_id, models.SparePartCategory.company_id == current_user.company_id).first()
+        if not category:
+             raise HTTPException(status_code=400, detail="Invalid Category ID")
+
+    db_spare_part = models.SparePart(**spare_part.dict(), company_id=current_user.company_id)
+    db.add(db_spare_part)
+    db.commit()
+    db.refresh(db_spare_part)
+    return db_spare_part
+
+@router.get("/spare-parts", response_model=List[schemas_archives.SparePartOut])
+def read_spare_parts(
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db)
+):
+    return db.query(models.SparePart).filter(models.SparePart.company_id == current_user.company_id).all()
+
+@router.put("/spare-parts/{spare_part_id}", response_model=schemas_archives.SparePartOut)
+def update_spare_part(
+    spare_part_id: int,
+    spare_part_update: schemas_archives.SparePartCreate,
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db)
+):
+    db_spare_part = db.query(models.SparePart).filter(models.SparePart.id == spare_part_id, models.SparePart.company_id == current_user.company_id).first()
+    if not db_spare_part:
+        raise HTTPException(status_code=404, detail="Spare Part not found")
+    
+    if spare_part_update.category_id:
+        category = db.query(models.SparePartCategory).filter(models.SparePartCategory.id == spare_part_update.category_id, models.SparePartCategory.company_id == current_user.company_id).first()
+        if not category:
+             raise HTTPException(status_code=400, detail="Invalid Category ID")
+
+    for key, value in spare_part_update.dict().items():
+        setattr(db_spare_part, key, value)
+
+    db.commit()
+    db.refresh(db_spare_part)
+    return db_spare_part
+
+@router.delete("/spare-parts/{spare_part_id}")
+def delete_spare_part(
+    spare_part_id: int,
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db)
+):
+    db_spare_part = db.query(models.SparePart).filter(models.SparePart.id == spare_part_id, models.SparePart.company_id == current_user.company_id).first()
+    if not db_spare_part:
+        raise HTTPException(status_code=404, detail="Spare Part not found")
+        
+    db.delete(db_spare_part)
+    db.commit()
+    return {"status": "success"}
+
+# --- SUPPLIERS ---
+@router.post("/suppliers", response_model=schemas_archives.SupplierOut)
+def create_supplier(
+    supplier: schemas_archives.SupplierCreate,
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db)
+):
+    # Fetch categories
+    categories = []
+    if supplier.category_ids:
+        categories = db.query(models.SparePartCategory).filter(
+            models.SparePartCategory.id.in_(supplier.category_ids),
+            models.SparePartCategory.company_id == current_user.company_id
+        ).all()
+        
+        if len(categories) != len(supplier.category_ids):
+             raise HTTPException(status_code=400, detail="One or more Category IDs are invalid")
+
+    supplier_data = supplier.dict(exclude={"category_ids"})
+    db_supplier = models.Supplier(**supplier_data, company_id=current_user.company_id)
+    db_supplier.categories = categories # Assign Many-to-Many
+    
+    db.add(db_supplier)
+    db.commit()
+    db.refresh(db_supplier)
+    return db_supplier
+
+@router.get("/suppliers", response_model=List[schemas_archives.SupplierOut])
+def read_suppliers(
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db)
+):
+    return db.query(models.Supplier).filter(models.Supplier.company_id == current_user.company_id).all()
+
+@router.put("/suppliers/{supplier_id}", response_model=schemas_archives.SupplierOut)
+def update_supplier(
+    supplier_id: int,
+    supplier_update: schemas_archives.SupplierCreate,
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db)
+):
+    db_supplier = db.query(models.Supplier).filter(models.Supplier.id == supplier_id, models.Supplier.company_id == current_user.company_id).first()
+    if not db_supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    
+    # Update categories
+    if supplier_update.category_ids is not None:
+         categories = db.query(models.SparePartCategory).filter(
+            models.SparePartCategory.id.in_(supplier_update.category_ids),
+            models.SparePartCategory.company_id == current_user.company_id
+        ).all()
+         if len(categories) != len(supplier_update.category_ids):
+             raise HTTPException(status_code=400, detail="One or more Category IDs are invalid")
+         db_supplier.categories = categories
+
+    supplier_data = supplier_update.dict(exclude={"category_ids"})
+    for key, value in supplier_data.items():
+        setattr(db_supplier, key, value)
+
+    db.commit()
+    db.refresh(db_supplier)
+    return db_supplier
+
+@router.delete("/suppliers/{supplier_id}")
+def delete_supplier(
+    supplier_id: int,
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db)
+):
+    db_supplier = db.query(models.Supplier).filter(models.Supplier.id == supplier_id, models.Supplier.company_id == current_user.company_id).first()
+    if not db_supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+        
+    db.delete(db_supplier)
+    db.commit()
+    return {"status": "success"}
