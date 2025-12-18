@@ -96,7 +96,7 @@ def check_and_run_plans(
         
         # Consolidate tasks into description
         task_list = "\n".join([f"- [ ] {t.description}" for t in plan.tasks])
-        description = f"Preventive Maintenance based on Plan: {plan.name}\n\nTasks:\n{task_list}"
+        description = f"Mantenimiento Preventivo según Plan: {plan.name}\n\nTareas:\n{task_list}"
 
         work_order = models.WorkOrder(
             company_id=current_user.company_id,
