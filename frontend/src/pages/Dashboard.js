@@ -1,84 +1,157 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { getDashboardStats } from '../api';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
-export default function Dashboard({ navigate }) {
+const Dashboard = ({ navigate }) => {
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const data = await getDashboardStats();
+                setStats(data);
+            } catch (error) {
+                console.error("Error fetching dashboard stats:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
+    if (loading) return <div className="p-8 text-center text-gray-500">Cargando dashboard...</div>;
+    if (!stats) return <div className="p-8 text-center text-red-500">Error al cargar datos.</div>;
+
+    const COLORS = ['#0088FE', '#FF8042']; // Blue (Preventive), Orange (Corrective) quite standard
+
+    // Validate data for Chart
+    const pieData = [
+        { name: 'Preventivo', value: stats.yearly_stats.preventive },
+        { name: 'Correctivo', value: stats.yearly_stats.corrective },
+    ];
+
+    // If no data, show empty state in chart
+    const hasChartData = stats.yearly_stats.total > 0;
+
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header / Top Bar is handled by App.js mostly, but we can do a local one or assume App.js nav */}
+        <div className="container mx-auto px-4 py-8">
+            <h1 className="text-2xl font-bold text-gray-800 mb-6">Panel de Control</h1>
 
-            <main className="py-10">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="md:flex md:items-center md:justify-between">
-                        <div className="min-w-0 flex-1">
-                            <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-                                Panel de Control
-                            </h2>
+            {/* Top Cards - Status Counts */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-400">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <p className="text-gray-500 text-sm font-medium uppercase">Pendientes</p>
+                            <p className="text-3xl font-bold text-gray-800">{stats.counts.pending}</p>
                         </div>
-                        <div className="mt-4 flex md:ml-4 md:mt-0">
-                            <button
-                                type="button"
-                                className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                            >
-                                Configuración
-                            </button>
-                            <button
-                                type="button"
-                                className="ml-3 inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                            >
-                                Nueva Orden
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Stats Grid */}
-                    <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                        {[
-                            { name: 'Mantenimientos Activos', stat: '12', change: '+2', changeType: 'increase' },
-                            { name: 'Equipos Registrados', stat: '24', change: '5%', changeType: 'increase' },
-                            { name: 'Alertas Pendientes', stat: '3', change: '-1', changeType: 'decrease' },
-                        ].map((item) => (
-                            <div key={item.name} className="relative overflow-hidden rounded-lg bg-white px-4 pt-5 pb-12 shadow sm:px-6 sm:pt-6">
-                                <dt>
-                                    <div className="absolute rounded-md bg-blue-500 p-3">
-                                        {/* Icon placehoder */}
-                                        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
-                                        </svg>
-                                    </div>
-                                    <p className="ml-16 truncate text-sm font-medium text-gray-500">{item.name}</p>
-                                </dt>
-                                <dd className="ml-16 flex items-baseline pb-1 sm:pb-7">
-                                    <p className="text-2xl font-semibold text-gray-900">{item.stat}</p>
-                                    <p className={`ml-2 flex items-baseline text-sm font-semibold ${item.changeType === 'increase' ? 'text-green-600' : 'text-red-600'}`}>
-                                        {item.change}
-                                    </p>
-                                </dd>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Main Content Area */}
-                    <div className="mt-8">
-                        <div className="overflow-hidden rounded-lg bg-white shadow">
-                            <div className="p-6">
-                                <h3 className="text-base font-semibold leading-6 text-gray-900">Actividad Reciente</h3>
-                                <div className="mt-6 border-t border-gray-100">
-                                    <dl className="divide-y divide-gray-100">
-                                        <div className="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                                            <dt className="text-sm font-medium leading-6 text-gray-900">Orden #2023-001</dt>
-                                            <dd className="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">Mantenimiento preventivo aire acondicionado.</dd>
-                                        </div>
-                                        <div className="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                                            <dt className="text-sm font-medium leading-6 text-gray-900">Orden #2023-002</dt>
-                                            <dd className="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">Reparación bomba de agua.</dd>
-                                        </div>
-                                    </dl>
-                                </div>
-                            </div>
+                        <div className="bg-yellow-100 p-3 rounded-full">
+                            <span className="text-2xl">⏳</span>
                         </div>
                     </div>
                 </div>
-            </main>
+
+                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <p className="text-gray-500 text-sm font-medium uppercase">En Progreso</p>
+                            <p className="text-3xl font-bold text-gray-800">{stats.counts.in_progress}</p>
+                        </div>
+                        <div className="bg-blue-100 p-3 rounded-full">
+                            <span className="text-2xl">🔧</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <p className="text-gray-500 text-sm font-medium uppercase">Pausadas</p>
+                            <p className="text-3xl font-bold text-gray-800">{stats.counts.paused}</p>
+                        </div>
+                        <div className="bg-purple-100 p-3 rounded-full">
+                            <span className="text-2xl">⏸️</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Chart Section */}
+                <div className="bg-white rounded-lg shadow p-6">
+                    <h2 className="text-lg font-bold text-gray-800 mb-4">Mantenimiento Anual ({new Date().getFullYear()})</h2>
+                    <div className="h-64 w-full flex items-center justify-center">
+                        {hasChartData ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={pieData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        fill="#8884d8"
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        label
+                                    >
+                                        {pieData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="text-gray-400 text-sm">No hay datos registrados este año.</div>
+                        )}
+                    </div>
+                    <div className="text-center mt-4 text-sm text-gray-600">
+                        Total OTs: <span className="font-bold">{stats.yearly_stats.total}</span>
+                    </div>
+                </div>
+
+                {/* Recent Activity List */}
+                <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-bold text-gray-800">Actividad Reciente</h2>
+                        <button onClick={() => navigate('/work-orders')} className="text-blue-600 text-sm hover:underline">Ver todas</button>
+                    </div>
+
+                    <div className="overflow-hidden">
+                        {stats.recent_activity.length === 0 ? (
+                            <p className="text-gray-500 text-sm text-center py-4">Sin actividad reciente.</p>
+                        ) : (
+                            <ul className="divide-y divide-gray-100">
+                                {stats.recent_activity.map((order) => (
+                                    <li key={order.id} className="py-3 hover:bg-gray-50 cursor-pointer rounded px-2 transition-colors" onClick={() => navigate('/work-orders')}>
+                                        <div className="flex justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-800">#{order.ticket_number} - {order.title || 'Sin Título'}</p>
+                                                <p className="text-xs text-gray-500 truncate max-w-xs">{order.description}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${order.status === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-800' :
+                                                        order.status === 'COMPLETADA' ? 'bg-green-100 text-green-800' :
+                                                            'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                    {order.status}
+                                                </span>
+                                                <p className="text-xs text-gray-400 mt-1">{new Date(order.created_at).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
-}
+};
+
+export default Dashboard;

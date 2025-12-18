@@ -199,4 +199,10 @@ export const uploadCompanyLogo = async (file) => {
     return response.data;
 };
 
+// --- DASHBOARD ---
+export const getDashboardStats = async () => {
+    const response = await api.get('/dashboard/stats');
+    return response.data;
+};
+
 export default api;
