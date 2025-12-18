@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getWorkOrders, updateWorkOrder, getAssets, getWorkers, createWorkOrder } from '../../api';
+import { getWorkOrders, updateWorkOrder, getAssets, getWorkers, createWorkOrder, getCompanySettings, API_URL } from '../../api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -7,6 +7,7 @@ export default function WorkOrderList({ navigate }) {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('');
+    const [companyData, setCompanyData] = useState(null);
 
     // Modal State
     const [showModal, setShowModal] = useState(false);
@@ -37,15 +38,17 @@ export default function WorkOrderList({ navigate }) {
         try {
             const params = filterStatus ? { status: filterStatus } : {};
             // Parallel load for efficiency
-            const [ordersData, assetsData, workersData] = await Promise.all([
+            const [ordersData, assetsData, workersData, companyRef] = await Promise.all([
                 getWorkOrders(params),
                 getAssets(),
-                getWorkers()
+                getWorkers(),
+                getCompanySettings()
             ]);
 
             setOrders(ordersData);
             setAssets(assetsData);
             setWorkers(workersData);
+            setCompanyData(companyRef);
         } catch (error) {
             console.error("Error loading data", error);
         } finally {
@@ -117,7 +120,7 @@ export default function WorkOrderList({ navigate }) {
         setShowModal(true);
     };
 
-    const generatePDF = (wo) => {
+    const generatePDF = async (wo) => {
         const doc = new jsPDF({
             format: 'a4'
         });
@@ -125,15 +128,65 @@ export default function WorkOrderList({ navigate }) {
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 14;
+        let startY = 20;
 
-        // Header
-        doc.setFontSize(22);
-        doc.text(`ORDEN DE TRABAJO #${wo.ticket_number}`, margin, 22);
+        // Logo Logic
+        if (companyData?.logo_url) {
+            try {
+                const imgUrl = companyData.logo_url.startsWith('http')
+                    ? companyData.logo_url
+                    : `${API_URL}${companyData.logo_url}`;
 
+                // Helper to load image
+                const loadImage = (src) => new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = "Anonymous"; // Crucial for CORS if API is on different port/domain
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    img.src = src;
+                });
+
+                const img = await loadImage(imgUrl);
+
+                // Aspect Ratio
+                const imgWidth = 25;
+                const imgHeight = (img.height * imgWidth) / img.width;
+
+                doc.addImage(img, 'PNG', margin, margin, imgWidth, imgHeight);
+
+                // Company Name next to logo
+                doc.setFontSize(14);
+                doc.setFont("helvetica", "bold");
+                doc.text(companyData.name || 'MantenPro', margin + imgWidth + 5, margin + 8);
+
+                // Reset font
+                doc.setFont("helvetica", "normal");
+
+                startY = Math.max(startY, margin + imgHeight + 10);
+
+            } catch (err) {
+                console.warn("Could not load logo for PDF", err);
+                // Fallback text if logo fails
+                doc.setFontSize(16);
+                doc.text(companyData?.name || 'MantenPro', margin, 20);
+                startY = 30;
+            }
+        } else {
+            // No logo, just text
+            doc.setFontSize(16);
+            doc.text(companyData?.name || 'MantenPro', margin, 20);
+            startY = 30;
+        }
+
+        // Header Title (Resized as requested)
+        doc.setFontSize(16); // Reduced from 22
+        doc.text(`ORDEN DE TRABAJO #${wo.ticket_number}`, margin, startY);
+
+        // Metadata below title
         doc.setFontSize(10);
-        doc.text(`Fecha: ${new Date(wo.created_at).toLocaleDateString()}`, margin, 30);
-        doc.text(`Estado: ${wo.status}`, margin, 35);
-        doc.text(`Tipo: ${wo.type}`, margin, 40);
+        doc.text(`Fecha: ${new Date(wo.created_at).toLocaleDateString()}`, margin, startY + 8);
+        doc.text(`Estado: ${wo.status}`, margin, startY + 13);
+        doc.text(`Tipo: ${wo.type}`, margin, startY + 18);
 
         // Details Table
         const tableData = [
@@ -145,7 +198,7 @@ export default function WorkOrderList({ navigate }) {
         ];
 
         autoTable(doc, {
-            startY: 45,
+            startY: startY + 25,
             head: [['Campo', 'Detalle']],
             body: tableData,
             theme: 'grid',
@@ -186,7 +239,7 @@ export default function WorkOrderList({ navigate }) {
         // Footer
         doc.setFontSize(8);
         doc.setTextColor(100);
-        doc.text('Generado por Sistema de Mantenimiento', margin, pageHeight - 10);
+        doc.text('Generado por Sistema MantenPro', margin, pageHeight - 10);
 
         // Open in new tab instead of saving
         window.open(doc.output('bloburl'), '_blank');

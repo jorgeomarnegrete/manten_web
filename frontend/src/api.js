@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000';
+export const API_URL = 'http://localhost:8000';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -175,6 +175,27 @@ export const createWorkOrder = async (data) => {
 
 export const updateWorkOrder = async (id, data) => {
     const response = await api.put(`/work-orders/${id}`, data);
+    return response.data;
+};
+
+export const getCompanySettings = async () => {
+    const response = await api.get('/settings/general');
+    return response.data;
+};
+
+export const updateCompanySettings = async (data) => {
+    const response = await api.put('/settings/general', data);
+    return response.data;
+};
+
+export const uploadCompanyLogo = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/settings/logo', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
     return response.data;
 };
 

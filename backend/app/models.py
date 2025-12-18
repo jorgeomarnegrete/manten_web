@@ -15,6 +15,16 @@ class Company(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     code = Column(String, unique=True, index=True) # For registration/invites
+    first_name = Column(String, nullable=True) # Contact person first name
+    last_name = Column(String, nullable=True) # Contact person last name
+    address = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    postal_code = Column(String, nullable=True)
+    province = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    email_contact = Column(String, nullable=True)
+    logo_url = Column(String, nullable=True)
+
     status = Column(Enum(CompanyStatus), default=CompanyStatus.ACTIVE)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_payment_date = Column(Date, nullable=True) # Null enables trial or initial state

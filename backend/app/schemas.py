@@ -26,12 +26,34 @@ class CompanyCreate(CompanyBase):
     admin_email: EmailStr
     admin_password: str
 
+class CompanyUpdate(BaseModel):
+    name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+    province: Optional[str] = None
+    phone: Optional[str] = None
+    email_contact: Optional[str] = None
+    logo_url: Optional[str] = None
+
 class Company(CompanyBase):
     id: int
     code: str
     status: str
     created_at: datetime
     last_payment_date: Optional[date] = None
+    
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+    province: Optional[str] = None
+    phone: Optional[str] = None
+    email_contact: Optional[str] = None
+    logo_url: Optional[str] = None
     
     class Config:
         orm_mode = True
