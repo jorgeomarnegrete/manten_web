@@ -1,0 +1,63 @@
+Registering test_1365485048@example.com...
+Logging in...
+Creating Supplier...
+Creating Purchase Order (Minimal)...
+Payload: {
+    "date":  "2024-12-19",
+    "items":  [
+                  {
+                      "unit_price":  10.5,
+                      "description":  "Item 1",
+                      "received_quantity":  0,
+                      "quantity":  5
+                  }
+              ],
+    "order_number":  "OC-TEST-MIN",
+    "supplier_id":  8
+}
+Running curl...
+Note: Unnecessary use of -X or --request, POST is already inferred.
+* Host localhost:8000 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying [::1]:8000...
+* Established connection to localhost (::1 port 8000) from ::1 port 50434 
+* using HTTP/1.x
+> POST /stock/purchase-orders HTTP/1.1
+
+> Host: localhost:8000
+
+> User-Agent: curl/8.16.0
+
+> Accept: */*
+
+> Content-Type: application/json
+
+> Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0XzEzNjU0ODUwNDhAZXhhbXBsZS5jb20iLCJjb21wYW55X2lkIjo5LCJleHAiOjE3NjYxNTQ3OTR9.j929eHm4-yi4pBRDsxsNIjYNR3l1C2exJDDPTpCSEwI
+
+> Content-Length: 327
+
+> 
+
+} [327 bytes data]
+* upload completely sent off: 327 bytes
+< HTTP/1.1 422 Unprocessable Entity
+
+< date: Fri, 19 Dec 2025 14:03:14 GMT
+
+< server: uvicorn
+
+< content-length: 109
+
+< content-type: application/json
+
+< 
+
+{ [109 bytes data]
+
+100   436  100   109  100   327   5708  17124 --:--:-- --:--:-- --:--:-- 27250
+* Connection #0 to host localhost:8000 left intact
+{"detail":[{"type":"none_required","loc":["body","date"],"msg":"Input should be None","input":"2024-12-19"}]}

@@ -13,6 +13,8 @@ import Suppliers from './pages/archives/Suppliers';
 import PreventivePlans from './pages/preventive/PreventivePlans';
 import PlanEditor from './pages/preventive/PlanEditor';
 import WorkOrderList from './pages/work_orders/WorkOrderList';
+import PurchaseOrderList from './pages/stock/PurchaseOrderList';
+import PurchaseOrderEditor from './pages/stock/PurchaseOrderEditor';
 import GeneralSettings from './pages/settings/GeneralSettings';
 import Header from './components/Header';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -95,12 +97,17 @@ function AppContent() {
         case '/settings/general':
             Component = GeneralSettings;
             break;
-        default:
-            // Fallback to Login, but let's check if we are in a known sub-route or debug
-            // console.log("Unknown path:", currentPath); 
-            Component = Login;
+        case '/stock/purchase-orders':
+            Component = PurchaseOrderList;
             break;
-            Component = Login;
+        default:
+            // Check dynamic routes
+            if (normalizedPath.startsWith('/stock/purchase-orders/')) {
+                Component = PurchaseOrderEditor;
+            } else {
+                // Fallback to Login
+                Component = Login;
+            }
             break;
     }
 

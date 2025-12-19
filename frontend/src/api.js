@@ -262,4 +262,33 @@ export const getDashboardStats = async () => {
     return response.data;
 };
 
+
+// --- STOCK (PURCHASE ORDERS) ---
+export const getPurchaseOrders = async (params = {}) => {
+    // params: { status, supplier_id }
+    const response = await api.get('/stock/purchase-orders', { params });
+    return response.data;
+};
+
+export const getPurchaseOrder = async (id) => {
+    const response = await api.get(`/stock/purchase-orders/${id}`);
+    return response.data;
+};
+
+export const createPurchaseOrder = async (data) => {
+    const response = await api.post('/stock/purchase-orders', data);
+    return response.data;
+};
+
+export const updatePurchaseOrderStock = async (id, data) => { // Renamed to avoid collision if any, though imports usually isolated
+    const response = await api.put(`/stock/purchase-orders/${id}`, data);
+    return response.data;
+};
+
+export const deletePurchaseOrder = async (id) => {
+    const response = await api.delete(`/stock/purchase-orders/${id}`);
+    return response.data;
+};
+
 export default api;
+

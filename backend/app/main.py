@@ -10,7 +10,7 @@ from jose import JWTError, jwt
 from .database import engine, Base, get_db
 from . import models, schemas, crud, utils
 from .dependencies import get_current_user, get_current_active_user
-from .routers import payments, archives, preventive_plans, work_orders, settings, dashboard
+from .routers import payments, archives, preventive_plans, work_orders, settings, dashboard, stock
 
 # Create tables automatically (dev only)
 Base.metadata.create_all(bind=engine)
@@ -23,6 +23,7 @@ app.include_router(preventive_plans.router)
 app.include_router(work_orders.router)
 app.include_router(settings.router)
 app.include_router(dashboard.router)
+app.include_router(stock.router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 

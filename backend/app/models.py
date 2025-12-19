@@ -297,3 +297,51 @@ class WorkOrder(Base):
     requested_by = relationship("Worker", foreign_keys=[requested_by_id])
     assigned_to = relationship("Worker", foreign_keys=[assigned_to_id])
 
+
+# --- Stock & Purchase Orders ---
+
+class PurchaseOrderStatus(str, enum.Enum):
+    PENDIENTE = "PENDIENTE"
+    PARCIALMENTE_RECIBIDO = "PARCIALMENTE_RECIBIDO"
+    COMPLETADA = "COMPLETADA"
+    CANCELADA = "CANCELADA"
+
+class PurchaseOrder(Base):
+    __tablename__ = "stock_purchase_orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"))
+    supplier_id = Column(Integer, ForeignKey("suppliers.id"))
+    
+    order_number = Column(String, index=True) # Could be auto-generated or manual
+    order_date = Column(Date, default=func.now())
+    delivery_date = Column(Date, nullable=True) # Est. delivery
+    total_amount = Column(Numeric(10, 2), default=0)
+    observations = Column(String, nullable=True)
+    
+    status = Column(Enum(PurchaseOrderStatus), default=PurchaseOrderStatus.PENDIENTE)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    company = relationship("Company")
+    supplier = relationship("Supplier")
+    items = relationship("PurchaseOrderItem", back_populates="order", cascade="all, delete-orphan")
+
+class PurchaseOrderItem(Base):
+    __tablename__ = "stock_purchase_order_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    purchase_order_id = Column(Integer, ForeignKey("stock_purchase_orders.id"))
+    spare_part_id = Column(Integer, ForeignKey("spare_parts.id"), nullable=True) # Nullable if just text desc?
+
+    description = Column(String) # Backup desc or manual
+    quantity = Column(Integer, default=1)
+    unit_price = Column(Numeric(10, 2), default=0)
+    total_price = Column(Numeric(10, 2), default=0)
+    
+    received_quantity = Column(Integer, default=0)
+    received_date = Column(Date, nullable=True) # Last received date
+
+    order = relationship("PurchaseOrder", back_populates="items")
+    spare_part = relationship("SparePart")

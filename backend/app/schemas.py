@@ -164,3 +164,51 @@ class WorkOrder(WorkOrderBase):
 from .schemas_archives import Asset
 WorkOrder.update_forward_refs()
 
+
+# --- Purchase Order Schemas ---
+
+class PurchaseOrderItemBase(BaseModel):
+    spare_part_id: Optional[int] = None
+    description: str
+    quantity: int
+    unit_price: float
+    received_quantity: int = 0
+    received_date: Optional[date] = None
+
+class PurchaseOrderItemCreate(PurchaseOrderItemBase):
+    pass
+
+class PurchaseOrderItem(PurchaseOrderItemBase):
+    id: int
+    purchase_order_id: int
+    total_price: float # Computed or stored? Stored in DB, compute in app
+
+    class Config:
+        orm_mode = True
+
+class PurchaseOrderBase(BaseModel):
+    supplier_id: int
+    order_date: Optional[date] = None
+    delivery_date: Optional[date] = None
+    observations: Optional[str] = None
+    order_number: str
+
+class PurchaseOrderCreate(PurchaseOrderBase):
+    order_number: Optional[str] = None
+    items: List[PurchaseOrderItemCreate] = []
+
+class PurchaseOrder(PurchaseOrderBase):
+    id: int
+    company_id: int
+    status: str
+    total_amount: float
+    created_at: datetime
+    items: List[PurchaseOrderItem] = []
+    supplier: Optional["SupplierOut"] = None # Use SupplierOut for display details
+
+    class Config:
+        orm_mode = True
+
+# Import necessary at the end to avoid circular deps if they exist
+from .schemas_archives import SupplierOut
+PurchaseOrder.update_forward_refs()
